@@ -7,8 +7,19 @@ contract OddOrEven{
     string public choicePlayer1 = ""; //EVEN or ODD
     string public hashOptionP1 = ""; //hash da opcao do jogador 1
 
+    uint64 public timeOut = 60 * 20; // 20 min;
+
+    uint256 public timeOutP1 = 0;
+    uint256 public timeOutP2 = 0;
+    uint256 public nLockTime = 0;
+
+
+
+
     bool public isOdd = true; //EVEN or ODD
     address public  player1;
+    address public  player2;
+
     uint8 private numberPlayer1;
 
     int8 private optionP2 = -1;
@@ -52,6 +63,12 @@ contract OddOrEven{
         hashOptionP1 = hashOptionP1In;
         player1 = msg.sender;
 
+        nLockTime = block.timestamp;
+
+        timeOutP1 = nLockTime + timeOut;//conversão
+
+        timeOutP2 = timeOutP1;
+
         status = string.concat("Player 1 is ", Strings.toHexString(player1), " and chose ", hashOptionP1, ", is Odd: ", isOdd? "true": "false");
     }
 
@@ -70,14 +87,66 @@ contract OddOrEven{
     function acceptGame (int8 optionP2In) public payable {
         //require(compare(newChoice, "EVEN") || compare(newChoice, "ODD"), "Choose EVEN or ODD");
         require (optionP2In > -1, 'Cannot accept negative numbers' );
-        require (msg.value >= bidMin, "Invalid amount");
+        require (msg.value == bidMin, "Invalid amount");
         //O jogo não pode ser aceito em um bloco menor que o nLockTime
         //assert(this.ctx.locktime >= this.nLockTime, "TX locktime cant be lower than base locktime");
+        require (block.timestamp >= nLockTime, "TX locktime cant be lower than base locktime");
         //assert(this.ctx.locktime <= this.timeOutP1, "Can´t accept after player 1 timeout");
+        require (block.timestamp <= timeOutP1, "Cannot accept after player 1 timeout");
 
         owner.transfer((address(this).balance / 100) * comission);
 
+        player2 = msg.sender;
+
+        timeOutP2 = block.timestamp + ( 2 * timeOut );
+
         optionP2 = optionP2In;
+    }
+
+    function resultGame (string memory keygame, int8 optionP1In) public payable {
+
+        require(optionP2 == -1, "Cant verify result before player 2 accpetance");
+
+        uint8 oddness = isOdd ? 1: 0;
+
+        if(keccak256(appendByteToBytes(keygame, optionP1In)) == _stringToBytes32(hashOptionP1)
+            && uint8(optionP1In + optionP2) % 2 == oddness){
+
+            payable(player1).transfer(address(this).balance);
+        }
+        else{
+            payable(player2).transfer(address(this).balance);
+        }
+    }
+
+    function appendByteToBytes(string memory keygame, int8 optionP1In) public pure returns (bytes memory) {
+        // Convert the input string to a bytes array
+        bytes memory keygameBytes = bytes(keygame);
+
+        // Create a new dynamic bytes array with space for the extra byte
+        bytes memory keygameOptP1 = new bytes(keygameBytes.length + 1);
+
+        // Copy the original bytes into the new array
+        for (uint256 i = 0; i < keygameBytes.length; i++) {
+            keygameOptP1[i] = keygameBytes[i];
+        }
+
+        // Append the new byte to the end of the array
+        keygameOptP1[keygameBytes.length] = bytes1(uint8(optionP1In));
+
+        return keygameOptP1;
+    }
+
+    // Helper function to convert a string hash (hex string) to bytes32
+    function _stringToBytes32(string memory source) internal pure returns (bytes32 result) {
+        bytes memory tempBytes = bytes(source);
+        if (tempBytes.length != 64) {
+            // Ensure the string hash is 64 characters long (representing 32 bytes in hex)
+            revert("Invalid hash string length");
+        }
+        assembly {
+            result := mload(add(tempBytes, 32))
+        }
     }
 
 
