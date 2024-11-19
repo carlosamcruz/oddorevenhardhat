@@ -87,24 +87,24 @@ describe("OddOrEven", function () {
 
     const player1Instance = oddOrEven.connect(player1);
 
-    console.log("gameKey: ", gameKey);
+    //console.log("gameKey: ", gameKey);
     let keygame: string = gameKey.substring(2, gameKey.length)
 
-    console.log("keygame: ", keygame);
-    console.log("keygame2: ", gameKey.substring(2));
+    //console.log("keygame: ", keygame);
+    //console.log("keygame2: ", gameKey.substring(2));
     let optionP1In: number = 3;
 
     let optionP1str = optionP1In.toString(16);
-    console.log("optionP1str: ", optionP1str);
+    //console.log("optionP1str: ", optionP1str);
 
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    console.log("optionP1str: ", optionP1str);
+    //console.log("optionP1str: ", optionP1str);
 
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
 
-    console.log("hashOptionP1In: ", hashOptionP1In);
+    //console.log("hashOptionP1In: ", hashOptionP1In);
 
     let isOdd = false;
 
@@ -112,9 +112,9 @@ describe("OddOrEven", function () {
 
     let gameData = fetchGameData(await oddOrEven.gameData());
 
-    console.log("Balance: ", hre.ethers.formatEther(await oddOrEven.getBalance()));
-    console.log("NLockTime: ", gameData.nLockTime);
-    console.log("timeOutP1: ", gameData.timeOutP1);
+    //console.log("Balance: ", hre.ethers.formatEther(await oddOrEven.getBalance()));
+    //console.log("NLockTime: ", gameData.nLockTime);
+    //console.log("timeOutP1: ", gameData.timeOutP1);
   
     expect(gameData.hashOptionP1).to.equal(hashOptionP1In);
   });
@@ -140,7 +140,124 @@ describe("OddOrEven", function () {
     .to.be.revertedWith("Invalid Bid");
   });
 
+  it("should NOT init game (Invalid hash format)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 3;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2) + "h";
+    let isOdd = false;
+
+    await expect(player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID}))
+    .to.be.revertedWith("Invalid hash format");
+  });
   
+  it("should NOT init game (Player1 already chose)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 3;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let isOdd = false;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    await expect(player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID}))
+    .to.be.revertedWith("Player1 already chose");
+  });
+
+  it("should quit game", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 3;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let isOdd = false;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    await player1Instance.quitGame();
+
+
+    let gameData = fetchGameData(await oddOrEven.gameData());
+  
+    expect(gameData.hashOptionP1).to.equal("");
+  });
+
+  it("should NOT quit game (Accepted)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
+
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 3;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let isOdd = false;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    await player2Instance.acceptGame(4, {value: DEFAULT_BID});
+
+    console.log("Balance: ", hre.ethers.formatEther(await oddOrEven.getBalance()));
+
+    await expect(player1Instance.quitGame())
+    .to.be.revertedWith("Cant quit game after other player accpetance");
+
+  });
+
+  it("should NOT quit game (Not Player 1)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
+
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 3;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let isOdd = false;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    await expect(player2Instance.quitGame())
+    .to.be.revertedWith("Only player1 can quit the game");
+
+  });
+
+
 
 
   /*
