@@ -16,6 +16,8 @@ type GameData = {
   player1: string;      // Player 1's address (address)
   player2: string;      // Player 2's address (address)
   optionP2: number;     // Player 2's option (int8)
+  optionP1: number;     // Player 1's option (int8)
+  keyGame: string;      // Player 1's keygame
 };
 
 function fetchGameData(rawGameData: any) {
@@ -30,6 +32,8 @@ function fetchGameData(rawGameData: any) {
     player1: rawGameData[6],
     player2: rawGameData[7],
     optionP2: Number(rawGameData[8]),
+    optionP1: Number(rawGameData[9]),
+    keyGame: rawGameData[10]
   };
   return gameData;
 }
@@ -51,14 +55,12 @@ function hexStringToUint8Array(hexString: string): Uint8Array {
   return byteArray;
 }
 
+let keySeed = hexStringToUint8Array ("abcddbe576b4818846aa77e82f4ed5fa78f92766b141f282d36703886d196df39322abcddbe576b4818846aa77e82f4ed5fa78f92766b141f282d36703886d196df39322")
+let gameKey = hre.ethers.keccak256(keySeed);
 
+const DEFAULT_BID = hre.ethers.parseEther("0.01");
 
 describe("OddOrEven", function () {
-
-  let keySeed = hexStringToUint8Array ("abcddbe576b4818846aa77e82f4ed5fa78f92766b141f282d36703886d196df39322abcddbe576b4818846aa77e82f4ed5fa78f92766b141f282d36703886d196df39322")
-  let gameKey = hre.ethers.keccak256(keySeed);
-
-  const DEFAULT_BID = hre.ethers.parseEther("0.01");
 
   // We define a fixture to reuse the same setup in every test.
   // We use loadFixture to run this setup once, snapshot that state,
@@ -102,7 +104,10 @@ describe("OddOrEven", function () {
 
     //console.log("optionP1str: ", optionP1str);
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+
 
     //console.log("hashOptionP1In: ", hashOptionP1In);
 
@@ -131,33 +136,16 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     let isOdd = false;
 
     //await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID - 1n});
 
     await expect(player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID - 1n}))
     .to.be.revertedWith("Invalid Bid");
-  });
-
-  it("should NOT init game (Invalid hash format)", async function () {
-    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
-
-    const player1Instance = oddOrEven.connect(player1);
-
-    let keygame: string = gameKey.substring(2, gameKey.length)
-    let optionP1In: number = 3;
-    let optionP1str = optionP1In.toString(16);
-
-    while(optionP1str.length % 2 === 1 )
-      optionP1str = "0" + optionP1str;
-
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2) + "h";
-    let isOdd = false;
-
-    await expect(player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID}))
-    .to.be.revertedWith("Invalid hash format");
-  });
+  });  
   
   it("should NOT init game (Player1 already chose)", async function () {
     const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
@@ -171,7 +159,10 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+    
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
@@ -192,7 +183,10 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
@@ -201,8 +195,11 @@ describe("OddOrEven", function () {
 
 
     let gameData = fetchGameData(await oddOrEven.gameData());
+
+    //console.log("gameData.hashOptionP1: ", gameData.hashOptionP1);
   
-    expect(gameData.hashOptionP1).to.equal("");
+    expect(gameData.hashOptionP1).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
+    //expect(gameData.hashOptionP1).to.equal(0);
   });
 
   it("should NOT quit game (Accepted)", async function () {
@@ -219,7 +216,9 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
@@ -233,7 +232,7 @@ describe("OddOrEven", function () {
 
     await player2Instance.acceptGame(4, {value: DEFAULT_BID});
 
-    console.log("Balance: ", hre.ethers.formatEther(await oddOrEven.getBalance()));
+    //console.log("Balance: ", hre.ethers.formatEther(await oddOrEven.getBalance()));
 
     await expect(player1Instance.quitGame())
     .to.be.revertedWith("Cant quit game after other player accpetance");
@@ -254,7 +253,9 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+//    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
@@ -277,7 +278,10 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))); 
+ 
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
@@ -308,7 +312,8 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
@@ -326,7 +331,6 @@ describe("OddOrEven", function () {
 
     await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
     await hre.ethers.provider.send("evm_mine", []);
-
 
     await expect(player3Instance.acceptGame(5, {value: DEFAULT_BID}))
     .to.be.revertedWith("Game Already Accepted");
@@ -346,7 +350,7 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
@@ -369,7 +373,7 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
@@ -392,9 +396,8 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     let isOdd = false;
-
     
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
 
@@ -421,7 +424,8 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+
     let isOdd = false;
 
     const latestBlock = await hre.ethers.provider.getBlock("latest");
@@ -446,39 +450,377 @@ describe("OddOrEven", function () {
 
   });
 
-  /*
-
-  it("keccak256", async function () {
+  it("should give victory to Player 1 ( 3 + 5 even)", async function () {
     const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
 
-    //const message = await helloWorld.message();
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
 
-    const status = await oddOrEven.status()
-    let text = hexStringToUint8Array ("abcddbe576b4818846aa77e82f4ed5fa78f92766b141f282d36703886d196df39322abcddbe576b4818846aa77e82f4ed5fa78f92766b141f282d36703886d196df39322")
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 3;
+    let optionP1str = optionP1In.toString(16);
 
-    console.log("hre.ethers.keccak256(abc): ", hre.ethers.keccak256(text));
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
 
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+    let isOdd = false;
 
-    expect(status).to.equal("");
+    //console.log("hashOptionP1In: ", hashOptionP1In);
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    let gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    await player2Instance.acceptGame(5, {value: DEFAULT_BID});
+
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    let balanceP1before = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
+    let balanceContract = await oddOrEven.getBalance();
+
+    //console.log("balanceP1: ", balanceP1before);
+    //console.log("balanceP2: ", balanceP2before);
+    //console.log("balanceContract: ", balanceContract);
+
+    //console.log("hashOptionP1In: ", gameData.hashOptionP1);
+
+    await player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In);
+
+    let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
+    balanceContract = await oddOrEven.getBalance();
+
+    //console.log("balanceP1: ", balanceP1after);
+    //console.log("balanceP2: ", balanceP2after);
+    //console.log("balanceContract: ", balanceContract);
+
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
+
+    //console.log("gameDataLast.keyGame: ", gameDataLast.keyGame);
+    //console.log("gameData.keyGame: ", gameData.keyGame);
+   
+    expect(balanceP1after > balanceP1before).to.equal(true);
+    expect(balanceP2after == balanceP2before).to.equal(true);
+    expect(gameDataLast.keyGame).to.equal(gameKey);
+
   });
 
+  it("should give victory to Player 1 ( 3 + 4 odd)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
 
-  it("Should play int", async function () {
-    const { oddOrEven, owner, otherAccount } = await loadFixture(deployFixture);
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
 
-    let text = hexStringToUint8Array ("abcddbe576b4818846aa77e82f4ed5fa78f92766b141f282d36703886d196df39322abcddbe576b4818846aa77e82f4ed5fa78f92766b141f282d36703886d196df39322")
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 3;
+    let optionP1str = optionP1In.toString(16);
 
-    const player1Instance = oddOrEven.connect(otherAccount);
-    await player1Instance.playerInit(false, hre.ethers.keccak256(text), {value: DEFAULT_BID});
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
 
-    //const result = await joKenPo.getResult();
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+    let isOdd = true;
 
-    const balance = await oddOrEven.getBalance();
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
 
-    expect(balance).to.equal(DEFAULT_BID);
-    
+    let gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    await player2Instance.acceptGame(4, {value: DEFAULT_BID});
+
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    let balanceP1before = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
+    let balanceContract = await oddOrEven.getBalance();
+
+    await player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In);
+
+    let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
+    balanceContract = await oddOrEven.getBalance();
+  
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
+  
+    expect(balanceP1after > balanceP1before).to.equal(true);
+    expect(balanceP2after == balanceP2before).to.equal(true);
+    expect(gameDataLast.keyGame).to.equal(gameKey);
+
   });
 
-  */
+  it("should give victory to Player 1 ( 2 + 4 even)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
 
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 2;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+    let isOdd = false;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    let gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    await player2Instance.acceptGame(4, {value: DEFAULT_BID});
+
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    let balanceP1before = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
+    let balanceContract = await oddOrEven.getBalance();
+
+    await player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In);
+
+    let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
+    balanceContract = await oddOrEven.getBalance();
+  
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
+  
+    expect(balanceP1after > balanceP1before).to.equal(true);
+    expect(balanceP2after == balanceP2before).to.equal(true);
+    expect(gameDataLast.keyGame).to.equal(gameKey);
+
+  });
+
+  it("should give victory to Player 1 ( 2 + 5 odd)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 2;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+    let isOdd = true;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    let gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    await player2Instance.acceptGame(5, {value: DEFAULT_BID});
+
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    let balanceP1before = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
+    let balanceContract = await oddOrEven.getBalance();
+
+    await player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In);
+
+    let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
+    balanceContract = await oddOrEven.getBalance();
+  
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
+  
+    expect(balanceP1after > balanceP1before).to.equal(true);
+    expect(balanceP2after == balanceP2before).to.equal(true);
+    expect(gameDataLast.keyGame).to.equal(gameKey);
+
+  });
+
+  it("should give victory to Player 2 (wrong p1 keygame)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 2;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+    let isOdd = true;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    let gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    await player2Instance.acceptGame(5, {value: DEFAULT_BID});
+
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    let balanceP1before = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
+    let balanceContract = await oddOrEven.getBalance();
+
+    await player1Instance.resultGame(hexStringToUint8Array(keygame.substring(0, keygame.length - 2) + "ab"), optionP1In);
+
+    let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
+    balanceContract = await oddOrEven.getBalance();
+
+  
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
+  
+    expect(balanceP1after <= balanceP1before).to.equal(true);
+    expect(balanceP2after > balanceP2before).to.equal(true);
+    //expect(gameDataLast.keyGame).to.equal(gameKey);
+
+  });
+
+  it("should give victory to Player 2 (wrong p1 option)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 2;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+    let isOdd = true;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    let gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    await player2Instance.acceptGame(5, {value: DEFAULT_BID});
+
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    let balanceP1before = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
+    let balanceContract = await oddOrEven.getBalance();
+
+
+    await player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In - 1);
+
+    let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
+    balanceContract = await oddOrEven.getBalance();
+
+  
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
+  
+    expect(balanceP1after <= balanceP1before).to.equal(true);
+    expect(balanceP2after > balanceP2before).to.equal(true);
+    expect(gameDataLast.keyGame).to.equal(gameKey);
+
+  });
+
+  it("should give victory to Player 2 (wrong p1 option)", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = -2;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+    let isOdd = true;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    let gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    await player2Instance.acceptGame(5, {value: DEFAULT_BID});
+
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    let balanceP1before = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
+    let balanceContract = await oddOrEven.getBalance();
+
+
+    await player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In);
+
+    let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
+    let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
+    balanceContract = await oddOrEven.getBalance();
+
+  
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
+  
+    expect(balanceP1after <= balanceP1before).to.equal(true);
+    expect(balanceP2after > balanceP2before).to.equal(true);
+    expect(gameDataLast.keyGame).to.equal(gameKey);
+
+  });
+
+ 
 });

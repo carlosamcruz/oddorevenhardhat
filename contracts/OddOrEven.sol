@@ -11,7 +11,7 @@ contract OddOrEven{
 
     // Struct to group all game-related fields
     struct GameData {
-        string hashOptionP1;   // Hash of Player 1's option
+        bytes32 hashOptionP1;   // Hash of Player 1's option
         uint64 timeOut;        // Timeout duration in seconds
         uint256 timeOutP1;     // Player 1 timeout timestamp
         uint256 timeOutP2;     // Player 2 timeout timestamp
@@ -20,10 +20,13 @@ contract OddOrEven{
         address player1;       // Player 1's address
         address player2;       // Player 2's address
         int8 optionP2;         // Player 2's option
+        int8 optionP1;         // Player 1's option
+        bytes keyGame;         // Player 1's keyGame
     }
 
     // Instance of the struct
     GameData public gameData;
+    GameData public lastGameRecord;
 
     // Immutable owner field
     address payable private immutable owner;
@@ -33,7 +36,8 @@ contract OddOrEven{
 
     constructor(){
         owner = payable (msg.sender);
-        gameData.hashOptionP1 = ""; //hash da opcao do jogador 1
+        //gameData.hashOptionP1 = ""; //hash da opcao do jogador 1
+        gameData.hashOptionP1 = 0; //hash da opcao do jogador 1
         gameData.timeOut = 60 * 20; // 20 min;
         gameData.timeOutP1 = 0;
         gameData.timeOutP2 = 0;
@@ -42,6 +46,10 @@ contract OddOrEven{
         gameData.player1 = address(0);
         gameData.player2 = address(0);
         gameData.optionP2 = -1;
+        gameData.optionP1 = -1;
+        gameData.keyGame = new bytes(0);
+
+        lastGameRecord = gameData;
     }
 
     function getBalance() public view returns(uint){
@@ -53,10 +61,15 @@ contract OddOrEven{
      */
     function resetGameFields() private{
 
-        gameData.hashOptionP1 = ""; //hash da opcao do jogador 1
+        lastGameRecord = gameData; // mantem o estado do último jogo para consulta;
+
+        //gameData.hashOptionP1 = ""; //hash da opcao do jogador 1
+        gameData.hashOptionP1 = 0; //hash da opcao do jogador 1
         gameData.player1 = address(0);
         gameData.player2 = address(0);
         gameData.optionP2 = -1;
+        gameData.optionP1 = -1;
+        gameData.keyGame = new bytes(0);
         //status = "";
         bidMin = 0.01 ether;
     }
@@ -81,11 +94,10 @@ contract OddOrEven{
      *      this.nLockTime + 2 * this.timeout       =>      0 * this.timeout (imdiatamente junto com o aceite do jogo)
      * 
      */
-    function playerInit (bool isOddIn, string memory hashOptionP1In) public payable {
-        //require(compare(newChoice, "EVEN") || compare(newChoice, "ODD"), "Choose EVEN or ODD");
+    function playerInit (bool isOddIn, bytes32 hashOptionP1In) public payable {
+
         require (msg.value >= bidMin, "Invalid Bid");
-        require(Keccak256Utils.isValidKeccak256Hex(hashOptionP1In), "Invalid hash format");
-        require(Keccak256Utils.compare(gameData.hashOptionP1, ""), "Player1 already chose");
+        require (gameData.hashOptionP1 == 0, "Player1 already chose");
 
         bidMin = msg.value; // o minimo agora é o valor casado pelo jogador 1;
         gameData.isOdd = isOddIn;
@@ -175,14 +187,19 @@ contract OddOrEven{
      * optionP1In não pode ser menor que zero
      *  
      */
-    function resultGame (string memory keygame, int8 optionP1In) public payable {
+    function resultGame (bytes memory keygame, int8 optionP1In) public payable {
 
         require(gameData.optionP2 > -1, "Cant verify result before player 2 accpetance");
-
         uint8 oddness = gameData.isOdd ? 1: 0;
 
-        if(keccak256(Keccak256Utils.appendByteToBytes(keygame, optionP1In)) == Keccak256Utils._stringToBytes32(gameData.hashOptionP1)
-            && (uint8(optionP1In + gameData.optionP2) % 2 == oddness) && (optionP1In > -1)){
+        gameData.keyGame = keygame;
+        gameData.optionP1 = optionP1In;
+
+        if(
+            (keccak256(Keccak256Utils.appendByteToBytes(keygame, optionP1In)) == gameData.hashOptionP1)
+            && (uint8(optionP1In + gameData.optionP2) % 2 == oddness) 
+            && (optionP1In > -1)
+        ){
 
             payable(gameData.player1).transfer(address(this).balance);
         }
