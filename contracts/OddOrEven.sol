@@ -26,6 +26,7 @@ contract OddOrEven{
 
     // Instance of the struct
     GameData public gameData;
+    // Keep the state of the last game until the end of the next
     GameData public lastGameRecord;
 
     // Immutable owner field
@@ -36,7 +37,7 @@ contract OddOrEven{
 
     constructor(){
         owner = payable (msg.sender);
-        //gameData.hashOptionP1 = ""; //hash da opcao do jogador 1
+
         gameData.hashOptionP1 = 0; //hash da opcao do jogador 1
         gameData.timeOut = 60 * 20; // 20 min;
         gameData.timeOutP1 = 0;
@@ -52,47 +53,36 @@ contract OddOrEven{
         lastGameRecord = gameData;
     }
 
-    function getBalance() public view returns(uint){
-        return address(this).balance;
-    }
-
     /**
      * após finalizar o jogo o reset deve ser chamado
+     * o estado da ultima partida fica registrado em lastGameRecord
      */
     function resetGameFields() private{
 
         lastGameRecord = gameData; // mantem o estado do último jogo para consulta;
 
-        //gameData.hashOptionP1 = ""; //hash da opcao do jogador 1
         gameData.hashOptionP1 = 0; //hash da opcao do jogador 1
         gameData.player1 = address(0);
         gameData.player2 = address(0);
         gameData.optionP2 = -1;
         gameData.optionP1 = -1;
         gameData.keyGame = new bytes(0);
-        //status = "";
+
         bidMin = 0.01 ether;
     }
 
     /**
-     * Inicio de uma partida; 
+     * Inicio de uma partida;
+     * 
+     * O hashOptionP1In informado pelo jogador um deve ser proviniente 
+     * de uma chave de 32 bytes e mais um valor OptionP1 int8 positivo.
+     * 
+     * Caso OptionP1 seja negativo o resultado levará a vitória altomático do jogador 2
+     * no momento que o resultado do jogo for informado  
      *
      * O jogador 1 deve estar atento à temporização do jogo para evitar ficar sem tempo hábil 
      * para responder antes que o resultado seja reivindicado pelo jogador 2.
-     *   
-     * o jogador 2 pode reclamar vitória dentro dos seguintes intervalos de tempo:
-     * 
-     *      Antes do time-out do jogador 1 
-     * 
-     *      this.nLockTime + 0 * this.timeout       =>      2 * this.timeout
-     *      this.nLockTime + 0.5 * this.timeout     =>      1.5 * this.timeout
-     *      
-     *      Após o time-out do jogador 1    
      *  
-     *      this.nLockTime + 1 * this.timeout       =>      1 * this.timeout
-     *      this.nLockTime + 1.5 * this.timeout     =>      0.5 * this.timeout    
-     *      this.nLockTime + 2 * this.timeout       =>      0 * this.timeout (imdiatamente junto com o aceite do jogo)
-     * 
      */
     function playerInit (bool isOddIn, bytes32 hashOptionP1In) public payable {
 
@@ -100,6 +90,7 @@ contract OddOrEven{
         require (gameData.hashOptionP1 == 0, "Player1 already chose");
 
         bidMin = msg.value; // o minimo agora é o valor casado pelo jogador 1;
+
         gameData.isOdd = isOddIn;
         gameData.hashOptionP1 = hashOptionP1In;
         gameData.player1 = msg.sender;
@@ -111,23 +102,11 @@ contract OddOrEven{
 
      /**
      * O jogador 1 pode cancelar o jogo a qualquer momento, enquanto o desafio não for aceito;
+     * 
      * Depois de aceito, o jogo não pode mais ser cancelado;
      * 
      * No caso de um jogo ainda não aceito, o jogador 1 deve ficar atento na seguinte temporização do jogo
      * para evitar ficar sem tempo hábil para responder antes que o resultado seja reivindicado pelo jogador 2.
-     *   
-     * o jogador 2 pode reclamar vitória dentro dos seguintes intervalos de tempo:
-     * 
-     *      Antes do time-out do jogador 1 
-     * 
-     *      this.nLockTime + 0 * this.timeout       =>      2 * this.timeout
-     *      this.nLockTime + 0.5 * this.timeout     =>      1.5 * this.timeout
-     *      
-     *      Após o time-out do jogador 1    
-     *  
-     *      this.nLockTime + 1 * this.timeout       =>      1 * this.timeout
-     *      this.nLockTime + 1.5 * this.timeout     =>      0.5 * this.timeout    
-     *      this.nLockTime + 2 * this.timeout       =>      0 * this.timeout (imdiatamente junto com o aceite do jogo)
      * 
      */
     function quitGame() public {
@@ -138,32 +117,15 @@ contract OddOrEven{
         address contractAddress = address(this);
         payable(gameData.player1).transfer((contractAddress.balance / 100) * (100 - commission));
 
-        //O resto do balance vai para o dono;
+        //O resto do balance vai para o dono do contrato;
         owner.transfer(contractAddress.balance);
         resetGameFields();
     }
 
     /**
      * Qualquer usuário pode aceitar o desafio de durante o tempo de espera do jogador 1
+     * 
      * O valor da aposta casada pelo jogador 2 será o mesmo valor oferecido pelo jogador 1
-     * 
-     * Problematica do método:
-     * 
-     *      O valor casado pelo jogador 2 deve vir de um UTXO controlado por quem aceitou a aposta
-     *      desta forma a trasação terá necessáriamente 2 inputs, sendo o primeiro do contrato e o
-     *      segunda da valor casado da aposta mais as taxas de rede. Isso inviabiliza o uso de
-     *      nSequence non-final de "00000000" a "feffffff" já que outro usuário não poderá realizar
-     *      update da transação devido a falta de controle sobre o segundo input.
-     * 
-     *      Por isso, não solicitamos uso de nSequence diferente de "ffffffff" neste método.
-     * 
-     *      Com as ferramentas adequadas, o jogador 2 pode após o time-out de espera ainda conseguir executar o acceptGame(),
-     *      indicando um nLockTime >= this.nLockTime e nLockTime <= this.timeOutP1. Isso é possível, se por qualquer motivo,
-     *      depois do time-out o encerramento do contrato não tiver sido realizado pelo jogador 1.
-     *      
-     *      É importante notar que interações não padrão não estarão disponíveis na plataforma regular. 
-     *      Contudo, desenvolvedores com o conhecimento necessário poderão implementar tais configurações, 
-     *      uma vez que a blockchain aceita esse tipo de interação.
      * 
      */
     function acceptGame (int8 optionP2In) public payable {
@@ -174,7 +136,8 @@ contract OddOrEven{
         require (block.timestamp > gameData.nLockTime, "TX locktime cant be lower than base locktime"); //Como testar isso?
         require (block.timestamp <= gameData.timeOutP1, "Cannot accept after player 1 timeout");
 
-        owner.transfer((address(this).balance / 100) * commission);
+        owner.transfer((address(this).balance / 100) * commission);//pagamento da comissão ao dono do contrato
+
         gameData.player2 = msg.sender;
         gameData.timeOutP2 = block.timestamp + ( 2 * gameData.timeOut );
         gameData.optionP2 = optionP2In;
