@@ -12,6 +12,7 @@ export default config;
 
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "solidity-coverage";
 
 //import dotenv from "dotenv";
 //dotenv.config();
@@ -23,6 +24,7 @@ const config: HardhatUserConfig = {
 
     hardhat: {
       allowBlocksWithSameTimestamp: true, // Enable same timestamp for blocks
+      blockGasLimit: 1099511627775//30000000, // Increase block gas limit for coverage test
     },
 
     local:{
