@@ -55,7 +55,7 @@ This project allows two players to participate in a fair "Odd or Even" game dire
 
 1. **Clone the Repository**:
    
-Try running some of the following tasks:
+To clone and install dependences, use the following commands:
 
 (Make sure to have the extension Solidity from Nomic Foundation installed in your enviroment)
 
@@ -67,10 +67,19 @@ npm install
 
 2. **Run Tests**:
    
-Try running some of the following tasks:
+For tests, run the following commands:
 
 ```shell
 npx hardhat node
 npm test
 npx hardhat coverage
+```
+
+3. **Deploy with Ignition in Local Network**:
+   
+To deploy with ignition in Local Network, run the following commands:
+
+```shell
+npx hardhat node
+npm run deploy:ign
 ```

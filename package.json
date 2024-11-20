@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "deploy:ign": "npx hardhat ignition deploy ignition/modules/OddOrEven.ts --network local"
   },
   "keywords": [],
   "author": "",
