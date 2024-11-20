@@ -158,7 +158,8 @@ contract OddOrEven{
         require (gameData.optionP2 == -1, 'Game Already Accepted' );
         require (optionP2In > -1, 'Cannot accept negative numbers' );
         require (msg.value == bidMin, "Invalid amount");
-        require (block.timestamp >= gameData.nLockTime, "TX locktime cant be lower than base locktime");
+        //Não existe zero confims no ETH então block.timestamp > gameData.nLockTime
+        require (block.timestamp > gameData.nLockTime, "TX locktime cant be lower than base locktime"); //Como testar isso?
         require (block.timestamp <= gameData.timeOutP1, "Cannot accept after player 1 timeout");
 
         owner.transfer((address(this).balance / 100) * commission);
