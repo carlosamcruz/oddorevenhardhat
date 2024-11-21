@@ -38,7 +38,6 @@ function fetchGameData(rawGameData: any) {
   return gameData;
 }
 
-
 function hexStringToUint8Array(hexString: string): Uint8Array {
   // Ensure the hex string length is even
   if (hexString.length % 2 !== 0) {
@@ -88,39 +87,19 @@ describe("OddOrEven", function () {
     const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
 
     const player1Instance = oddOrEven.connect(player1);
-
-    //console.log("gameKey: ", gameKey);
     let keygame: string = gameKey.substring(2, gameKey.length)
-
-    //console.log("keygame: ", keygame);
-    //console.log("keygame2: ", gameKey.substring(2));
     let optionP1In: number = 3;
-
     let optionP1str = optionP1In.toString(16);
-    //console.log("optionP1str: ", optionP1str);
 
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    //console.log("optionP1str: ", optionP1str);
-
-    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
-
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
-
-
-    //console.log("hashOptionP1In: ", hashOptionP1In);
-
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
 
-    let gameData = fetchGameData(await oddOrEven.gameData());
-
-    //console.log("Balance: ", hre.ethers.formatEther(await oddOrEven.getBalance()));
-    //console.log("NLockTime: ", gameData.nLockTime);
-    //console.log("timeOutP1: ", gameData.timeOutP1);
-  
+    let gameData = fetchGameData(await oddOrEven.gameData()); 
     expect(gameData.hashOptionP1).to.equal(hashOptionP1In);
   });
 
@@ -136,12 +115,8 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
-
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     let isOdd = false;
-
-    //await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID - 1n});
 
     await expect(player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID - 1n}))
     .to.be.revertedWith("Invalid Bid");
@@ -158,8 +133,6 @@ describe("OddOrEven", function () {
 
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
-
-    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
 
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     
@@ -183,23 +156,37 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
-
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
 
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
 
-    await player1Instance.quitGame();
+    let balanceP1before = await hre.ethers.provider.getBalance(player1.address);
+    let balanceOwnerbefore = await hre.ethers.provider.getBalance(owner.address);
+    let balanceContractBefore = await hre.ethers.provider.getBalance(oddOrEven);
 
+    const tx = await player1Instance.quitGame();
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+    // Retrieve gas used and gas price
+    const gasUsed = receipt!.gasUsed; // BigNumber
+    const gasPrice = tx.gasPrice; // BigNumber
+    // Calculate the fee (gas used * gas price)
+    const fee = gasUsed * gasPrice;
 
+    let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
+    let balanceOwnerafter = await hre.ethers.provider.getBalance(owner.address);
+    let balanceContractAfter = await hre.ethers.provider.getBalance(oddOrEven);
+  
     let gameData = fetchGameData(await oddOrEven.gameData());
 
-    //console.log("gameData.hashOptionP1: ", gameData.hashOptionP1);
-  
+    //Verificação da distribuição de saldo do contrato após o cancelamento
+    expect((balanceOwnerafter - balanceOwnerbefore) + (balanceP1after - balanceP1before + fee)).to.equal(balanceContractBefore);
+    //Verificação do saldo do dono do contrato
+    expect(balanceContractBefore - (balanceP1after - balanceP1before + fee)).to.equal(balanceOwnerafter - balanceOwnerbefore);
+    //Verificação do jogo resetado
     expect(gameData.hashOptionP1).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
-    //expect(gameData.hashOptionP1).to.equal(0);
   });
 
   it("should NOT quit game (Accepted)", async function () {
@@ -216,23 +203,17 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
-
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
-
 
     let gameData = fetchGameData(await oddOrEven.gameData());
 
     await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
     await hre.ethers.provider.send("evm_mine", []);
 
-
     await player2Instance.acceptGame(4, {value: DEFAULT_BID});
-
-    //console.log("Balance: ", hre.ethers.formatEther(await oddOrEven.getBalance()));
 
     await expect(player1Instance.quitGame())
     .to.be.revertedWith("Cant quit game after other player accpetance");
@@ -245,7 +226,6 @@ describe("OddOrEven", function () {
     const player1Instance = oddOrEven.connect(player1);
     const player2Instance = oddOrEven.connect(player2);
 
-
     let keygame: string = gameKey.substring(2, gameKey.length)
     let optionP1In: number = 3;
     let optionP1str = optionP1In.toString(16);
@@ -253,9 +233,7 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-//    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
-
     let isOdd = false;
 
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
@@ -278,8 +256,6 @@ describe("OddOrEven", function () {
     while(optionP1str.length % 2 === 1 )
       optionP1str = "0" + optionP1str;
 
-    //let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))).substring(2);
-
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str))); 
  
     let isOdd = false;
@@ -291,10 +267,19 @@ describe("OddOrEven", function () {
     await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
     await hre.ethers.provider.send("evm_mine", []);
 
+    let balanceOwnerbefore = await hre.ethers.provider.getBalance(owner.address);
+    let balanceContractBefore = await hre.ethers.provider.getBalance(oddOrEven);
+
     await player2Instance.acceptGame(4, {value: DEFAULT_BID});
 
+    let balanceOwnerafter = await hre.ethers.provider.getBalance(owner.address);
+    let balanceContractAfter = await hre.ethers.provider.getBalance(oddOrEven);
+
     gameData = fetchGameData(await oddOrEven.gameData());
-  
+   
+    //Verificação do saldo do dono do contrato
+    expect((balanceOwnerafter - balanceOwnerbefore) + balanceContractAfter).to.equal( 2n * balanceContractBefore);
+    //Verificação do jogo aceito
     expect(gameData.optionP2).to.equal(4);
 
   });
@@ -466,16 +451,12 @@ describe("OddOrEven", function () {
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     let isOdd = false;
 
-    //console.log("hashOptionP1In: ", hashOptionP1In);
-
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
 
     let gameData = fetchGameData(await oddOrEven.gameData());
 
     await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
     await hre.ethers.provider.send("evm_mine", []);
-
-    //await player2Instance.acceptGame(5, {value: DEFAULT_BID});
 
     await expect(player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In))
     .to.revertedWith("Cant verify result before player 2 accpetance");
@@ -498,8 +479,6 @@ describe("OddOrEven", function () {
     let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
     let isOdd = false;
 
-    //console.log("hashOptionP1In: ", hashOptionP1In);
-
     await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
 
     let gameData = fetchGameData(await oddOrEven.gameData());
@@ -518,29 +497,16 @@ describe("OddOrEven", function () {
     let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
     let balanceContract = await hre.ethers.provider.getBalance(oddOrEven);
 
-    //console.log("balanceP1: ", balanceP1before);
-    //console.log("balanceP2: ", balanceP2before);
-    //console.log("balanceContract: ", balanceContract);
-
-    //console.log("hashOptionP1In: ", gameData.hashOptionP1);
-
     await player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In);
 
     let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
     let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
     balanceContract = await hre.ethers.provider.getBalance(oddOrEven);
 
-    //console.log("balanceP1: ", balanceP1after);
-    //console.log("balanceP2: ", balanceP2after);
-    //console.log("balanceContract: ", balanceContract);
-
     gameData = fetchGameData(await oddOrEven.gameData());
 
     let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
-
-    //console.log("gameDataLast.keyGame: ", gameDataLast.keyGame);
-    //console.log("gameData.keyGame: ", gameData.keyGame);
-   
+  
     expect(balanceP1after > balanceP1before).to.equal(true);
     expect(balanceP2after == balanceP2before).to.equal(true);
     expect(gameDataLast.keyGame).to.equal(gameKey);
