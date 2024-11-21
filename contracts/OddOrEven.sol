@@ -3,6 +3,8 @@ pragma solidity ^0.8.27;
 import "./Keccak256Utils.sol";
 
 /**
+ * Jesus is the LORD!!!
+ * 
  * @title Contract Odd or Even Peer-to-Peer
  * @author Carlos Augusto de Moraes Cruz
  * @notice No cheating allowed
