@@ -82,7 +82,6 @@ describe("OddOrEven", function () {
     expect(gameData.optionP2).to.equal(-1);
   });
 
-
   it("should init game", async function () {
     const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
 
@@ -195,7 +194,6 @@ describe("OddOrEven", function () {
     const player1Instance = oddOrEven.connect(player1);
     const player2Instance = oddOrEven.connect(player2);
 
-
     let keygame: string = gameKey.substring(2, gameKey.length)
     let optionP1In: number = 3;
     let optionP1str = optionP1In.toString(16);
@@ -217,7 +215,6 @@ describe("OddOrEven", function () {
 
     await expect(player1Instance.quitGame())
     .to.be.revertedWith("Cant quit game after other player accpetance");
-
   });
 
   it("should NOT quit game (Not Player 1)", async function () {
@@ -240,7 +237,6 @@ describe("OddOrEven", function () {
 
     await expect(player2Instance.quitGame())
     .to.be.revertedWith("Only player1 can quit the game");
-
   });
 
   it("should accept game", async function () {
@@ -281,7 +277,6 @@ describe("OddOrEven", function () {
     expect((balanceOwnerafter - balanceOwnerbefore) + balanceContractAfter).to.equal( 2n * balanceContractBefore);
     //Verificação do jogo aceito
     expect(gameData.optionP2).to.equal(4);
-
   });
 
   it("should NOT accept game (Already Accepted)", async function () {
@@ -319,7 +314,6 @@ describe("OddOrEven", function () {
 
     await expect(player3Instance.acceptGame(5, {value: DEFAULT_BID}))
     .to.be.revertedWith("Game Already Accepted");
-
   });
 
   it("should NOT accept game (Negative Option)", async function () {
@@ -342,7 +336,6 @@ describe("OddOrEven", function () {
 
     await expect(player2Instance.acceptGame(-4, {value: DEFAULT_BID}))
     .to.be.revertedWith("Cannot accept negative numbers");
-
   });
 
   it("should NOT accept game (Invalid Amount)", async function () {
@@ -365,7 +358,6 @@ describe("OddOrEven", function () {
 
     await expect(player2Instance.acceptGame(4, {value: DEFAULT_BID + 1n}))
     .to.be.revertedWith("Invalid amount");
-
   });
 
   it("should NOT accept game (Timestap == Nlocktime)", async function () {
@@ -393,7 +385,6 @@ describe("OddOrEven", function () {
 
     await expect(player2Instance.acceptGame(4, {value: DEFAULT_BID}))
     .to.be.revertedWith("TX locktime cant be lower than base locktime");
-
   });
 
   it("should NOT accept game (Timout Player 1)", async function () {
@@ -432,7 +423,6 @@ describe("OddOrEven", function () {
 
     await expect(player2Instance.acceptGame(4, {value: DEFAULT_BID}))
     .to.be.revertedWith("Cannot accept after player 1 timeout");
-
   });
 
   it("should NOT result game (Not Accepted)", async function () {
@@ -460,7 +450,6 @@ describe("OddOrEven", function () {
 
     await expect(player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In))
     .to.revertedWith("Cant verify result before player 2 accpetance");
-
   });
 
   it("should give victory to Player 1 ( 3 + 5 even)", async function () {
@@ -510,7 +499,6 @@ describe("OddOrEven", function () {
     expect(balanceP1after > balanceP1before).to.equal(true);
     expect(balanceP2after == balanceP2before).to.equal(true);
     expect(gameDataLast.keyGame).to.equal(gameKey);
-
   });
 
   it("should give victory to Player 1 ( 3 + 4 odd)", async function () {
@@ -560,7 +548,6 @@ describe("OddOrEven", function () {
     expect(balanceP1after > balanceP1before).to.equal(true);
     expect(balanceP2after == balanceP2before).to.equal(true);
     expect(gameDataLast.keyGame).to.equal(gameKey);
-
   });
 
   it("should give victory to Player 1 ( 2 + 4 even)", async function () {
@@ -610,7 +597,6 @@ describe("OddOrEven", function () {
     expect(balanceP1after > balanceP1before).to.equal(true);
     expect(balanceP2after == balanceP2before).to.equal(true);
     expect(gameDataLast.keyGame).to.equal(gameKey);
-
   });
 
   it("should give victory to Player 1 ( 2 + 5 odd)", async function () {
@@ -660,7 +646,6 @@ describe("OddOrEven", function () {
     expect(balanceP1after > balanceP1before).to.equal(true);
     expect(balanceP2after == balanceP2before).to.equal(true);
     expect(gameDataLast.keyGame).to.equal(gameKey);
-
   });
 
   it("should give victory to Player 2 (wrong p1 keygame)", async function () {
@@ -702,16 +687,11 @@ describe("OddOrEven", function () {
     let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
     let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
     balanceContract = await hre.ethers.provider.getBalance(oddOrEven);
-
   
     gameData = fetchGameData(await oddOrEven.gameData());
 
-    let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
-  
     expect(balanceP1after <= balanceP1before).to.equal(true);
     expect(balanceP2after > balanceP2before).to.equal(true);
-    //expect(gameDataLast.keyGame).to.equal(gameKey);
-
   });
 
   it("should give victory to Player 2 (wrong p1 option)", async function () {
@@ -748,13 +728,11 @@ describe("OddOrEven", function () {
     let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
     let balanceContract = await hre.ethers.provider.getBalance(oddOrEven);
 
-
     await player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In - 1);
 
     let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
     let balanceP2after = await hre.ethers.provider.getBalance(player2.address);
     balanceContract = await hre.ethers.provider.getBalance(oddOrEven);
-
   
     gameData = fetchGameData(await oddOrEven.gameData());
 
@@ -763,7 +741,6 @@ describe("OddOrEven", function () {
     expect(balanceP1after <= balanceP1before).to.equal(true);
     expect(balanceP2after > balanceP2before).to.equal(true);
     expect(gameDataLast.keyGame).to.equal(gameKey);
-
   });
 
   it("should give victory to Player 2 (negative p1 option)", async function () {
@@ -800,7 +777,6 @@ describe("OddOrEven", function () {
     let balanceP2before = await hre.ethers.provider.getBalance(player2.address);
     let balanceContract = await hre.ethers.provider.getBalance(oddOrEven);
 
-
     await player1Instance.resultGame(hexStringToUint8Array(keygame), optionP1In);
 
     let balanceP1after = await hre.ethers.provider.getBalance(player1.address);
@@ -814,7 +790,6 @@ describe("OddOrEven", function () {
     expect(balanceP1after <= balanceP1before).to.equal(true);
     expect(balanceP2after > balanceP2before).to.equal(true);
     expect(gameDataLast.keyGame).to.equal(gameKey);
-
   });
 
   it("should claim game", async function () {
@@ -864,7 +839,6 @@ describe("OddOrEven", function () {
     expect(balanceP1after == balanceP1before).to.equal(true);
     expect(balanceP2after > balanceP2before).to.equal(true);
     expect(gameDataLast.keyGame).to.equal("0x");
-
   });
 
   it("should NOT claim game (Not Accepted)", async function () {
@@ -890,9 +864,7 @@ describe("OddOrEven", function () {
     await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
     await hre.ethers.provider.send("evm_mine", []);
 
-
     await expect(player2Instance.claimGame()).to.be.revertedWith("Only accepted game can be claimed");
-
   });
 
   it("should NOT claim game (Timeout P2)", async function () {
@@ -926,7 +898,6 @@ describe("OddOrEven", function () {
     await hre.ethers.provider.send("evm_mine", []);
 
     await expect(player2Instance.claimGame()).to.be.revertedWith("Game can only be claimed afther Player 2 timeout");
-
   });
 
   it("should Init game again", async function () {
@@ -966,8 +937,5 @@ describe("OddOrEven", function () {
     let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
 
     expect(gameDataLast.hashOptionP1).to.equal(hashOptionP1In);
-
   });
-
-
 });
