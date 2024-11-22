@@ -929,4 +929,45 @@ describe("OddOrEven", function () {
 
   });
 
+  it("should Init game again", async function () {
+    const { oddOrEven, owner, player1, player2 } = await loadFixture(deployFixture);
+
+    const player1Instance = oddOrEven.connect(player1);
+    const player2Instance = oddOrEven.connect(player2);
+
+    let keygame: string = gameKey.substring(2, gameKey.length)
+    let optionP1In: number = 2;
+    let optionP1str = optionP1In.toString(16);
+
+    while(optionP1str.length % 2 === 1 )
+      optionP1str = "0" + optionP1str;
+
+    let hashOptionP1In = (hre.ethers.keccak256(hexStringToUint8Array(keygame + optionP1str)));
+    let isOdd = true;
+
+    await player1Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    let gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.nLockTime) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    await player2Instance.acceptGame(5, {value: DEFAULT_BID});
+
+    gameData = fetchGameData(await oddOrEven.gameData());
+
+    await hre.ethers.provider.send("evm_setNextBlockTimestamp", [Number(gameData.timeOutP2) + 1]);
+    await hre.ethers.provider.send("evm_mine", []);
+
+    await player2Instance.claimGame();
+
+    await player2Instance.playerInit(isOdd, hashOptionP1In, {value: DEFAULT_BID});
+
+    let gameDataLast = fetchGameData(await oddOrEven.lastGameRecord());
+
+    expect(gameDataLast.hashOptionP1).to.equal(hashOptionP1In);
+
+  });
+
+
 });
