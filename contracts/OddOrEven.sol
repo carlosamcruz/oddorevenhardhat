@@ -32,7 +32,7 @@ contract OddOrEven{
     GameData public lastGameRecord;
 
     // Immutable owner field
-    address payable private immutable owner;
+    address payable public immutable owner;
 
     uint256 bidMin = 0.01 ether;        // Minimum bid amount
     uint8 commission = 1;      // Commission percentage

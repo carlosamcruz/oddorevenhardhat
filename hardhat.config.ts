@@ -21,7 +21,6 @@ const config: HardhatUserConfig = {
   solidity: "0.8.27",
   defaultNetwork: "local",
   networks: {
-
     
     hardhat: {
       allowBlocksWithSameTimestamp: true, // Enable same timestamp for blocks
