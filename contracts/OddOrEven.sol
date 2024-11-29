@@ -34,8 +34,8 @@ contract OddOrEven{
     // Immutable owner field
     address payable public immutable owner;
 
-    uint256 bidMin = 0.01 ether;        // Minimum bid amount
-    uint8 commission = 1;      // Commission percentage
+    uint256 public bidMin = 0.01 ether;        // Minimum bid amount
+    uint8 public commission = 1;      // Commission percentage
 
     constructor(){
         owner = payable (msg.sender);
@@ -53,6 +53,24 @@ contract OddOrEven{
         gameData.keyGame = new bytes(0);
 
         lastGameRecord = gameData;
+    }
+
+    /**
+     * Novo valor minimo de aposta
+     */
+    function setBid(uint256 newBid) external{
+        require(msg.sender == owner, "You do not have permission");
+        require (gameData.hashOptionP1 == 0, "You can not change the comission with a game in progress");
+        bidMin = newBid;
+    }
+
+    /**
+     * Nova comissão da plataforma
+     */
+    function setComission(uint8 newComission) external{
+        require(msg.sender == owner, "You do not have permission");
+        require (gameData.hashOptionP1 == 0, "You can not change the comission with a game in progress");
+        commission = newComission;
     }
 
     /**
