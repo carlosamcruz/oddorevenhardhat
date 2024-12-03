@@ -172,6 +172,7 @@ contract OddOrEven{
      */
     function resultGame (bytes memory keygame, int8 optionP1In) public payable {
 
+        require (msg.sender == gameData.player1, "You cannot result a game");
         require(gameData.optionP2 > -1, "Cant verify result before player 2 accpetance");
         uint8 oddness = gameData.isOdd ? 1: 0;
 

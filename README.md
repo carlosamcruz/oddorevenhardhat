@@ -88,7 +88,7 @@ npm run deploy:ign
 
 ```shell
 npm run deploy:bsc
-npx hardhat verify --network bsctest 0x3f91FB5dAf7D1C6d4b5efe370dBd1e3e86DB44d4
+npx hardhat verify --network bsctest 0xae42E1727B170FE607128c9b972EA855bD859850
 Successfully verified contract OddOrEven on the block explorer.
-https://testnet.bscscan.com/address/0x3f91FB5dAf7D1C6d4b5efe370dBd1e3e86DB44d4#code
+https://testnet.bscscan.com/address/0xae42E1727B170FE607128c9b972EA855bD859850#code
 ```
